@@ -1,243 +1,368 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Loan Closure SOA — NIFCPL CRM</title>
-<link rel="stylesheet" href="style.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-</head>
-<body>
+// ============================================================
+//  CLOSURE SOA LOGIC (only runs on closure.html)
+// ============================================================
+if ($('generateClosureBtn')) {
 
-<div class="container">
+  const STORAGE_KEY = 'nifcpl_soa_closure';
 
-  <!-- ==================== CRM HEADER ==================== -->
-  <div class="crm-header">
-    <div class="crm-logo">NI</div>
-    <div class="crm-title">
-      <h1>NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</h1>
-      <p>Loan Closure Statement — CRM Portal</p>
-    </div>
-    <!-- 🔗 Nav back to Active page -->
-    <a href="index.html" class="nav-link">← Back to Active SOA</a>
-  </div>
+  // ---------- LocalStorage helpers ----------
+  function getSavedClosures() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  }
+  function saveClosures(list) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+  function addClosure(rec) {
+    const list = getSavedClosures();
+    list.unshift(rec);
+    saveClosures(list);
+  }
+  function deleteClosure(id) {
+    saveClosures(getSavedClosures().filter(r => r.id !== id));
+  }
+  function generateId() {
+    return 'CLS_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  }
 
-  <!-- ==================== INPUT FORM ==================== -->
-  <div class="card" id="closureInputCard">
-    <h2>🔒 Loan Closure Details</h2>
+  // ---------- Init ----------
+  window.addEventListener('DOMContentLoaded', () => {
+    addPaymentRow();
+    renderHistory();
+  });
 
-    <!-- Customer Info -->
-    <div class="grid">
-      <div class="form-group">
-        <label>Customer Name</label>
-        <input type="text" id="cCustomerName" placeholder="Enter Customer Name" />
-      </div>
+  // ---------- Payment rows ----------
+  function addPaymentRow(date = '', mode = '', ref = '', amt = '') {
+    const tbody = $('paymentBody');
+    const tr = document.createElement('tr');
 
-      <div class="form-group">
-        <label>PAN Number</label>
-        <input type="text" id="cPanNumber" placeholder="Enter PAN Number" />
-      </div>
+    tr.innerHTML = `
+      <td><input type="date" class="pay-date" value="${date}" /></td>
+      <td>
+        <select class="pay-mode" style="width:100%; padding:8px 10px; border:1.5px solid #cbd5e0; border-radius:6px; font-size:13px; background:#f9fbfd;">
+          <option value="">Select Mode</option>
+          <option value="Cash" ${mode === 'Cash' ? 'selected' : ''}>Cash</option>
+          <option value="UPI" ${mode === 'UPI' ? 'selected' : ''}>UPI</option>
+          <option value="NEFT" ${mode === 'NEFT' ? 'selected' : ''}>NEFT</option>
+          <option value="RTGS" ${mode === 'RTGS' ? 'selected' : ''}>RTGS</option>
+          <option value="Cheque" ${mode === 'Cheque' ? 'selected' : ''}>Cheque</option>
+          <option value="DD" ${mode === 'DD' ? 'selected' : ''}>DD</option>
+          <option value="Bank Transfer" ${mode === 'Bank Transfer' ? 'selected' : ''}>Bank Transfer</option>
+        </select>
+      </td>
+      <td><input type="text" class="pay-ref" placeholder="e.g. TXN12345" value="${ref}" /></td>
+      <td class="right"><input type="number" class="pay-amount" step="0.01" placeholder="0.00" value="${amt}" style="text-align:right;" /></td>
+      <td><button class="btn-remove" onclick="this.closest('tr').remove()">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
 
-      <div class="form-group">
-        <label>Account Status</label>
-        <input type="text" id="cAccountStatus" value="CLOSED" readonly />
-      </div>
+  $('addPaymentBtn').addEventListener('click', () => addPaymentRow());
 
-      <div class="form-group">
-        <label>Principal Disbursed Amount (₹)</label>
-        <input type="number" id="cPrincipal" placeholder="e.g. 2000" step="0.01" />
-      </div>
+  // ---------- Read payment rows ----------
+  function readPayments() {
+    const rows = $('paymentBody').querySelectorAll('tr');
+    const out = [];
+    let total = 0;
+    rows.forEach(tr => {
+      const date = tr.querySelector('.pay-date').value;
+      const mode = tr.querySelector('.pay-mode').value;
+      const ref  = tr.querySelector('.pay-ref').value.trim();
+      const amt  = parseFloat(tr.querySelector('.pay-amount').value) || 0;
+      if (date || mode || ref || amt > 0) {
+        out.push({ date, mode, ref, amount: amt });
+        total += amt;
+      }
+    });
+    return { payments: out, total };
+  }
 
-      <div class="form-group">
-        <label>Date of Disbursal</label>
-        <input type="date" id="cDisbursalDate" />
-      </div>
+  // ---------- Render payments into table ----------
+  function renderPaymentRows(payments, tbodyId) {
+    let html = '';
+    if (payments.length === 0) {
+      html = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:20px;">No payment records added</td></tr>`;
+    } else {
+      payments.forEach((p, i) => {
+        html += `<tr>
+          <td>${i + 1}</td>
+          <td>${fmtDate(p.date)}</td>
+          <td>${p.mode || '—'}</td>
+          <td>${p.ref || '—'}</td>
+          <td class="right">${inr(p.amount)}</td>
+        </tr>`;
+      });
+    }
+    $(tbodyId).innerHTML = html;
+  }
 
-      <div class="form-group">
-        <label>Loan Closure Date</label>
-        <input type="date" id="cClosureDate" />
-      </div>
+  // ---------- Generate Closure SOA ----------
+  function renderClosure() {
+    const cName        = ($('cCustomerName').value || '').trim() || '—';
+    const cPan         = ($('cPanNumber').value || '').trim().toUpperCase() || '—';
+    const cDisbDate    = $('cDisbursalDate').value;
+    const cClosureDate = $('cClosureDate').value;
+    const cOverdue     = parseFloat($('cTotalOverdue').value) || 0;
+    const cDiscount    = parseFloat($('cDiscount').value) || 0;
+    const cSettled     = parseFloat($('cSettledAmount').value) || 0;
 
-      <div class="form-group">
-        <label>Total Overdue Amount Before Closure (₹)</label>
-        <input type="number" id="cTotalOverdue" placeholder="e.g. 22307.34" step="0.01" />
-      </div>
+    if (!cClosureDate) { alert('Please select Loan Closure Date'); return; }
+    if (!cSettled)     { alert('Please enter Final Settled Amount'); return; }
 
-      <div class="form-group">
-        <label>Total Discount Given (₹)</label>
-        <input type="number" id="cDiscount" placeholder="e.g. 9947.34" step="0.01" />
-      </div>
+    // Fill SOA
+    $('outCName').textContent       = cName;
+    $('outCPan').textContent        = cPan;
+    $('outCDisbDate').textContent   = fmtDate(cDisbDate);
+    $('outCCloseDate2').textContent = fmtDate(cClosureDate);
+    $('outCCloseDate3').textContent = fmtDate(cClosureDate);
+    $('outCName2').textContent      = cName;
+    $('outClosureDate').textContent = `Closed on ${fmtDate(cClosureDate)}`;
 
-      <div class="form-group highlight-input-green">
-        <label>✅ Final Settled Amount (₹)</label>
-        <input type="number" id="cSettledAmount" placeholder="e.g. 12360" step="0.01" />
-      </div>
-    </div>
+    // Payments
+    const { payments, total } = readPayments();
+    renderPaymentRows(payments, 'outPaymentBody');
 
-    <!-- Payment History -->
-    <div class="payment-section">
-      <div class="payment-header">
-        <h3>💰 Payment History (Kis Date Ko Kitna Paid)</h3>
-        <button id="addPaymentBtn" class="btn-small">+ Add Payment</button>
-      </div>
+    // Summary
+    $('outTotalOverdue').textContent  = inr(cOverdue);
+    $('outTotalDiscount').textContent = '- ' + inr(cDiscount);
+    $('outNetSettled').textContent    = inr(cSettled);
+    $('outTotalPaid').textContent     = inr(total);
 
-      <table class="payment-table">
-        <thead>
-          <tr>
-            <th style="width:22%">Payment Date</th>
-            <th style="width:28%">Payment Mode</th>
-            <th style="width:25%">Reference No.</th>
-            <th class="right" style="width:20%">Amount (₹)</th>
-            <th style="width:5%"></th>
-          </tr>
-        </thead>
-        <tbody id="paymentBody">
-          <!-- Rows added by JS -->
-        </tbody>
-      </table>
-    </div>
+    // ---------- SAVE ----------
+    const record = {
+      id: generateId(),
+      savedOn: new Date().toISOString(),
+      customerName: cName,
+      panNumber: cPan,
+      disbDate: cDisbDate,
+      closureDate: cClosureDate,
+      totalOverdue: cOverdue,
+      discount: cDiscount,
+      settled: cSettled,
+      payments: payments,
+      totalPaid: total
+    };
+    addClosure(record);
 
-    <button id="generateClosureBtn" class="btn-primary">⚙️ Generate Closure SOA</button>
-  </div>
+    // Show preview
+    $('closurePreview').classList.remove('hidden');
+    $('closurePreview').scrollIntoView({ behavior: 'smooth' });
 
-  <!-- ==================== CLOSURE SOA PREVIEW ==================== -->
-  <div id="closurePreview" class="hidden">
+    renderHistory();
+  }
 
-    <div class="soa-actions">
-      <button id="downloadClosurePdfBtn" class="btn-success">⬇️ Download Closure PDF</button>
-      <button id="editClosureBtn" class="btn-secondary">✏️ Edit Details</button>
-      <button id="printClosureBtn" class="btn-secondary">🖨️ Print</button>
-    </div>
+  $('generateClosureBtn').addEventListener('click', renderClosure);
 
-    <div id="closureContent" class="soa-content">
+  // ---------- Download Closure PDF ----------
+  async function downloadClosurePDF() {
+    const { jsPDF } = window.jspdf;
+    const element = $('closureContent');
+    await new Promise(r => setTimeout(r, 250));
 
-      <!-- Letterhead -->
-      <div class="soa-letterhead">
-        <div class="lh-logo">NI</div>
-        <div class="lh-text">
-          <h1>NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</h1>
-          <p class="lh-tag">Loan Closure Statement</p>
-        </div>
-      </div>
+    const canvas = await html2canvas(element, {
+      scale: 2.5, useCORS: true,
+      backgroundColor: '#ffffff', logging: false
+    });
 
-      <div class="soa-title-bar closure-bar">LOAN CLOSURE STATEMENT OF ACCOUNT</div>
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth  = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 8;
+    const imgWidth  = pageWidth - margin * 2;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      <!-- LOAN CLOSED STAMP -->
-      <div class="closed-stamp-wrap">
-        <div class="closed-stamp">
-          <div class="stamp-inner">
-            <span class="stamp-icon">✔</span>
-            <span class="stamp-text">LOAN CLOSED</span>
-            <span class="stamp-date" id="outClosureDate">—</span>
-          </div>
-        </div>
-      </div>
+    let heightLeft = imgHeight;
+    let position = margin;
 
-      <!-- Details -->
-      <div class="details-grid">
-        <div class="details-box">
-          <div class="details-title">BORROWER DETAILS</div>
-          <div class="details-row">
-            <span class="lbl">Customer Name:</span>
-            <span class="val" id="outCName">—</span>
-          </div>
-          <div class="details-row">
-            <span class="lbl">PAN:</span>
-            <span class="val" id="outCPan">—</span>
-          </div>
-        </div>
-        <div class="details-box">
-          <div class="details-title">LOAN ACCOUNT DETAILS</div>
-          <div class="details-row">
-            <span class="lbl">Account Status:</span>
-            <span class="val status-green" id="outCStatus">CLOSED</span>
-          </div>
-          <div class="details-row">
-            <span class="lbl">Date of Disbursal:</span>
-            <span class="val" id="outCDisbDate">—</span>
-          </div>
-          <div class="details-row">
-            <span class="lbl">Loan Closure Date:</span>
-            <span class="val" id="outCCloseDate2">—</span>
-          </div>
-        </div>
-      </div>
+    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+    heightLeft -= (pageHeight - margin * 2);
 
-      <!-- Payment History -->
-      <div class="section-heading">PAYMENT HISTORY</div>
-      <table class="soa-table">
-        <thead>
-          <tr>
-            <th style="width:10%">S.NO.</th>
-            <th style="width:25%">PAYMENT DATE</th>
-            <th style="width:25%">PAYMENT MODE</th>
-            <th style="width:20%">REFERENCE NO.</th>
-            <th class="right" style="width:20%">AMOUNT (INR)</th>
-          </tr>
-        </thead>
-        <tbody id="outPaymentBody"></tbody>
-      </table>
+    while (heightLeft > 0) {
+      position = margin - (imgHeight - heightLeft);
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+      heightLeft -= (pageHeight - margin * 2);
+    }
 
-      <!-- Closure Summary -->
-      <div class="section-heading">CLOSURE SUMMARY</div>
-      <table class="soa-table">
-        <thead>
-          <tr>
-            <th style="width:60%">DESCRIPTION</th>
-            <th class="right" style="width:40%">AMOUNT (INR)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Total Overdue Amount Before Closure</td>
-            <td class="right" id="outTotalOverdue">—</td>
-          </tr>
-          <tr class="discount-row">
-            <td>Less: Special Settlement Discount</td>
-            <td class="right" id="outTotalDiscount">—</td>
-          </tr>
-          <tr class="total-row">
-            <td>Net Settled Amount</td>
-            <td class="right" id="outNetSettled">—</td>
-          </tr>
-          <tr class="final-row">
-            <td>Total Amount Received from Customer</td>
-            <td class="right" id="outTotalPaid">—</td>
-          </tr>
-          <tr class="final-row-green">
-            <td><b>Balance Outstanding After Closure</b></td>
-            <td class="right"><b>₹0.00 — Account Fully Settled</b></td>
-          </tr>
-        </tbody>
-      </table>
+    const name = ($('cCustomerName').value || 'Customer').trim().replace(/\s+/g, '_') || 'Customer';
+    const pan  = ($('cPanNumber').value || 'PAN').trim().toUpperCase() || 'PAN';
+    const date = new Date().toISOString().slice(0, 10);
+    pdf.save(`Closure_SOA_${name}_${pan}_${date}.pdf`);
+  }
 
-      <!-- Closure Note -->
-      <div class="closure-note">
-        <b>✅ Closure Confirmation:</b> This is to certify that the loan account of
-        <span id="outCName2">the customer</span> has been
-        <b>fully settled and closed</b> on <span id="outCCloseDate3">—</span>.
-        No further dues are outstanding on this account. We thank you for your cooperation.
-      </div>
+  $('downloadClosurePdfBtn').addEventListener('click', downloadClosurePDF);
+  $('editClosureBtn').addEventListener('click', () => {
+    $('closurePreview').classList.add('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  $('printClosureBtn').addEventListener('click', () => window.print());
 
-      <!-- Footer -->
-      <div class="soa-footer">
-        <div class="footer-note">
-          <b>Note:</b> This is a computer-generated Loan Closure Statement. For any discrepancy,
-          please contact Narainsons Investments Finance and Consultancy Private Limited.
-        </div>
-        <div class="footer-sign">
-          <div class="sign-company">NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</div>
-          <div class="sign-line"></div>
-          <div class="sign-label">Authorised Signatory</div>
-        </div>
-      </div>
+  // ============================================================
+  //  TABS
+  // ============================================================
+  $('tabGenerate').addEventListener('click', () => {
+    $('tabGenerate').classList.add('active');
+    $('tabHistory').classList.remove('active');
+    $('generateSection').classList.remove('hidden');
+    $('historySection').classList.add('hidden');
+  });
 
-    </div>
-  </div>
+  $('tabHistory').addEventListener('click', () => {
+    $('tabHistory').classList.add('active');
+    $('tabGenerate').classList.remove('active');
+    $('historySection').classList.remove('hidden');
+    $('generateSection').classList.add('hidden');
+    renderHistory();
+  });
 
-</div>
+  // ============================================================
+  //  HISTORY
+  // ============================================================
+  function renderHistory() {
+    const list = getSavedClosures();
+    const query = ($('searchInput').value || '').trim().toLowerCase();
 
-<script src="script.js"></script>
-</body>
-</html>
+    const filtered = query
+      ? list.filter(r =>
+          (r.customerName || '').toLowerCase().includes(query) ||
+          (r.panNumber || '').toLowerCase().includes(query)
+        )
+      : list;
+
+    $('totalCount').textContent = list.length;
+    $('showingCount').textContent = filtered.length;
+
+    const tbody = $('historyBody');
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">${
+        query ? 'No matching records found.' : 'No saved closure SOA yet. Generate one to see it here.'
+      }</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    filtered.forEach((r, i) => {
+      const savedDate = new Date(r.savedOn).toLocaleString('en-IN', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+
+      html += `<tr>
+        <td>${i + 1}</td>
+        <td><b>${r.customerName}</b></td>
+        <td>${r.panNumber}</td>
+        <td>${fmtDate(r.closureDate)}</td>
+        <td class="right"><b>${inr(r.settled)}</b></td>
+        <td style="font-size:11px; color:#64748b;">${savedDate}</td>
+        <td>
+          <button class="btn-view" data-id="${r.id}">👁 View</button>
+          <button class="btn-pdf" data-id="${r.id}">⬇ PDF</button>
+          <button class="btn-del" data-id="${r.id}">🗑 Del</button>
+        </td>
+      </tr>`;
+    });
+    tbody.innerHTML = html;
+
+    tbody.querySelectorAll('.btn-view').forEach(b => {
+      b.addEventListener('click', () => viewClosure(b.dataset.id));
+    });
+    tbody.querySelectorAll('.btn-pdf').forEach(b => {
+      b.addEventListener('click', () => viewClosure(b.dataset.id, true));
+    });
+    tbody.querySelectorAll('.btn-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (confirm('Delete this closure record? This cannot be undone.')) {
+          deleteClosure(b.dataset.id);
+          renderHistory();
+        }
+      });
+    });
+  }
+
+  $('searchInput').addEventListener('input', renderHistory);
+  $('clearSearchBtn').addEventListener('click', () => {
+    $('searchInput').value = '';
+    renderHistory();
+  });
+
+  // ============================================================
+  //  VIEW SAVED CLOSURE
+  // ============================================================
+  function viewClosure(id, autoDownload = false) {
+    const r = getSavedClosures().find(x => x.id === id);
+    if (!r) { alert('Record not found'); return; }
+
+    $('hName').textContent      = r.customerName;
+    $('hPan').textContent       = r.panNumber;
+    $('hDisbDate').textContent  = fmtDate(r.disbDate);
+    $('hCloseDate').textContent = fmtDate(r.closureDate);
+    $('hCloseDate2').textContent = fmtDate(r.closureDate);
+    $('hName2').textContent     = r.customerName;
+    $('hClosureDate').textContent = `Closed on ${fmtDate(r.closureDate)}`;
+
+    renderPaymentRows(r.payments || [], 'hPaymentBody');
+
+    $('hTotalOverdue').textContent  = inr(r.totalOverdue);
+    $('hTotalDiscount').textContent = '- ' + inr(r.discount);
+    $('hNetSettled').textContent    = inr(r.settled);
+    $('hTotalPaid').textContent     = inr(r.totalPaid);
+
+    $('historyPreview').classList.remove('hidden');
+    $('historyPreview').scrollIntoView({ behavior: 'smooth' });
+
+    if (autoDownload) {
+      setTimeout(downloadHistoryClosurePDF, 300);
+    }
+  }
+
+  $('closeHistoryPreviewBtn').addEventListener('click', () => {
+    $('historyPreview').classList.add('hidden');
+  });
+
+  // ---------- Download from preview ----------
+  async function downloadHistoryClosurePDF() {
+    const { jsPDF } = window.jspdf;
+    const element = $('historyContent');
+    await new Promise(res => setTimeout(res, 250));
+
+    const canvas = await html2canvas(element, {
+      scale: 2.5, useCORS: true,
+      backgroundColor: '#ffffff', logging: false
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth  = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 8;
+    const imgWidth  = pageWidth - margin * 2;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = margin;
+
+    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+    heightLeft -= (pageHeight - margin * 2);
+
+    while (heightLeft > 0) {
+      position = margin - (imgHeight - heightLeft);
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+      heightLeft -= (pageHeight - margin * 2);
+    }
+
+    const name = ($('hName').textContent || 'Customer').replace(/\s+/g, '_');
+    const pan  = ($('hPan').textContent || 'PAN').toUpperCase();
+    const date = new Date().toISOString().slice(0, 10);
+    pdf.save(`Closure_SOA_${name}_${pan}_${date}.pdf`);
+  }
+
+  $('downloadHistoryPdfBtn').addEventListener('click', downloadHistoryClosurePDF);
+}
