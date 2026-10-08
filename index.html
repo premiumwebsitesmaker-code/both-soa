@@ -19,153 +19,289 @@
       <h1>NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</h1>
       <p>Statement of Account (SOA) — CRM Portal</p>
     </div>
-    <!-- 🔗 Nav to Closure page -->
     <a href="closure.html" class="nav-link">🔒 Go to Closure SOA →</a>
   </div>
 
-  <!-- ==================== INPUT FORM ==================== -->
-  <div class="card" id="inputCard">
-    <h2>📝 Customer Details — Active SOA</h2>
-
-    <div class="grid">
-      <div class="form-group">
-        <label>Customer Name</label>
-        <input type="text" id="customerName" placeholder="Enter Customer Name" />
-      </div>
-
-      <div class="form-group">
-        <label>PAN Number</label>
-        <input type="text" id="panNumber" placeholder="Enter PAN Number" />
-      </div>
-
-      <div class="form-group">
-        <label>Account Status</label>
-        <input type="text" id="accountStatus" value="DEFAULT / OVERDUE" readonly />
-      </div>
-
-      <div class="form-group">
-        <label>Principal Disbursed Amount (₹)</label>
-        <input type="number" id="principal" placeholder="e.g. 2000" step="0.01" />
-      </div>
-
-      <div class="form-group">
-        <label>Date of Disbursal</label>
-        <input type="date" id="disbursalDate" />
-      </div>
-
-      <div class="form-group">
-        <label>Statement Date (Today)</label>
-        <input type="date" id="statementDate" />
-      </div>
-
-      <div class="form-group">
-        <label>Interest Rate (% p.m. SI) — First 7 Days</label>
-        <input type="number" id="interestRate" value="4" step="0.01" />
-      </div>
-
-      <div class="form-group">
-        <label>Default Interest Rate (% p.m. SI)</label>
-        <input type="number" id="defaultRate" value="3" step="0.01" />
-      </div>
-
-      <div class="form-group">
-        <label>Penal Charge Base (₹ / year)</label>
-        <input type="number" id="penalBase" value="1500" step="0.01" />
-      </div>
-
-      <div class="form-group highlight-input">
-        <label>🎯 Customer Final Overdue (₹) — Jo Pay Karna Hai</label>
-        <input type="number" id="finalOverdue" placeholder="e.g. 12360" step="0.01" />
-      </div>
-    </div>
-
-    <button id="generateBtn" class="btn-primary">⚙️ Generate Active SOA</button>
+  <!-- ==================== MAIN TABS ==================== -->
+  <div class="tab-switcher">
+    <button id="tabGenerate" class="tab-btn active">⚙️ Generate New SOA</button>
+    <button id="tabHistory" class="tab-btn">📚 Saved SOA History</button>
   </div>
 
-  <!-- ==================== SOA PREVIEW ==================== -->
-  <div id="soaPreview" class="hidden">
+  <!-- ============================================================ -->
+  <!-- ============== SECTION 1: GENERATE ========================= -->
+  <!-- ============================================================ -->
+  <div id="generateSection">
 
-    <div class="soa-actions">
-      <button id="downloadPdfBtn" class="btn-success">⬇️ Download PDF</button>
-      <button id="editBtn" class="btn-secondary">✏️ Edit Details</button>
-      <button id="printBtn" class="btn-secondary">🖨️ Print</button>
+    <div class="card" id="inputCard">
+      <h2>📝 Customer Details — Active SOA</h2>
+
+      <div class="grid">
+        <div class="form-group">
+          <label>Customer Name</label>
+          <input type="text" id="customerName" placeholder="Enter Customer Name" />
+        </div>
+
+        <div class="form-group">
+          <label>PAN Number</label>
+          <input type="text" id="panNumber" placeholder="Enter PAN Number" />
+        </div>
+
+        <div class="form-group">
+          <label>Account Status</label>
+          <input type="text" id="accountStatus" value="DEFAULT / OVERDUE" readonly />
+        </div>
+
+        <div class="form-group">
+          <label>Principal Disbursed Amount (₹)</label>
+          <input type="number" id="principal" placeholder="e.g. 2000" step="0.01" />
+        </div>
+
+        <div class="form-group">
+          <label>Date of Disbursal</label>
+          <input type="date" id="disbursalDate" />
+        </div>
+
+        <div class="form-group">
+          <label>Statement Date (Today)</label>
+          <input type="date" id="statementDate" />
+        </div>
+
+        <div class="form-group">
+          <label>Interest Rate (% p.m. SI) — First 7 Days</label>
+          <input type="number" id="interestRate" value="4" step="0.01" />
+        </div>
+
+        <div class="form-group">
+          <label>Default Interest Rate (% p.m. SI)</label>
+          <input type="number" id="defaultRate" value="3" step="0.01" />
+        </div>
+
+        <div class="form-group">
+          <label>Penal Charge Base (₹ / year)</label>
+          <input type="number" id="penalBase" value="1500" step="0.01" />
+        </div>
+
+        <div class="form-group highlight-input">
+          <label>🎯 Customer Final Overdue (₹) — Jo Pay Karna Hai</label>
+          <input type="number" id="finalOverdue" placeholder="e.g. 12360" step="0.01" />
+        </div>
+      </div>
+
+      <button id="generateBtn" class="btn-primary">⚙️ Generate + Save Active SOA</button>
     </div>
 
-    <div id="soaContent" class="soa-content">
-
-      <div class="soa-letterhead">
-        <div class="lh-logo">NI</div>
-        <div class="lh-text">
-          <h1>NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</h1>
-          <p class="lh-tag">Statement of Account</p>
-        </div>
+    <div id="soaPreview" class="hidden">
+      <div class="soa-actions">
+        <button id="downloadPdfBtn" class="btn-success">⬇️ Download PDF</button>
+        <button id="editBtn" class="btn-secondary">✏️ Edit Details</button>
+        <button id="printBtn" class="btn-secondary">🖨️ Print</button>
       </div>
 
-      <div class="soa-title-bar">STATEMENT OF ACCOUNT</div>
-
-      <div class="details-grid">
-        <div class="details-box">
-          <div class="details-title">BORROWER DETAILS</div>
-          <div class="details-row">
-            <span class="lbl">Customer Name:</span>
-            <span class="val" id="outName">—</span>
-          </div>
-          <div class="details-row">
-            <span class="lbl">PAN:</span>
-            <span class="val" id="outPan">—</span>
+      <div id="soaContent" class="soa-content">
+        <div class="soa-letterhead">
+          <div class="lh-logo">NI</div>
+          <div class="lh-text">
+            <h1>NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</h1>
+            <p class="lh-tag">Statement of Account</p>
           </div>
         </div>
-        <div class="details-box">
-          <div class="details-title">LOAN ACCOUNT DETAILS</div>
-          <div class="details-row">
-            <span class="lbl">Account Status:</span>
-            <span class="val status-red" id="outStatus">—</span>
+
+        <div class="soa-title-bar">STATEMENT OF ACCOUNT</div>
+
+        <div class="details-grid">
+          <div class="details-box">
+            <div class="details-title">BORROWER DETAILS</div>
+            <div class="details-row">
+              <span class="lbl">Customer Name:</span>
+              <span class="val" id="outName">—</span>
+            </div>
+            <div class="details-row">
+              <span class="lbl">PAN:</span>
+              <span class="val" id="outPan">—</span>
+            </div>
           </div>
-          <div class="details-row">
-            <span class="lbl">Date of Disbursal:</span>
-            <span class="val" id="outDisbDate">—</span>
+          <div class="details-box">
+            <div class="details-title">LOAN ACCOUNT DETAILS</div>
+            <div class="details-row">
+              <span class="lbl">Account Status:</span>
+              <span class="val status-red" id="outStatus">—</span>
+            </div>
+            <div class="details-row">
+              <span class="lbl">Date of Disbursal:</span>
+              <span class="val" id="outDisbDate">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-heading">ACCOUNT BREAKDOWN</div>
+        <table class="soa-table">
+          <thead>
+            <tr>
+              <th style="width:38%">COMPONENT</th>
+              <th style="width:42%">CALCULATION DETAIL</th>
+              <th class="right" style="width:20%">AMOUNT (INR)</th>
+            </tr>
+          </thead>
+          <tbody id="breakdownBody"></tbody>
+        </table>
+
+        <div class="section-heading">TRANSACTION LEDGER</div>
+        <table class="soa-table">
+          <thead>
+            <tr>
+              <th style="width:22%">TRANSACTION DATE</th>
+              <th style="width:38%">DESCRIPTION</th>
+              <th class="right" style="width:20%">AMOUNT (INR)</th>
+              <th class="right" style="width:20%">BALANCE (INR)</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+
+        <div class="soa-footer">
+          <div class="footer-note">
+            <b>Note:</b> This is a computer-generated Statement of Account. For any discrepancy,
+            please contact Narainsons Investments Finance and Consultancy Private Limited.
+          </div>
+          <div class="footer-sign">
+            <div class="sign-company">NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</div>
+            <div class="sign-line"></div>
+            <div class="sign-label">Authorised Signatory</div>
           </div>
         </div>
       </div>
-
-      <div class="section-heading">ACCOUNT BREAKDOWN</div>
-      <table class="soa-table">
-        <thead>
-          <tr>
-            <th style="width:38%">COMPONENT</th>
-            <th style="width:42%">CALCULATION DETAIL</th>
-            <th class="right" style="width:20%">AMOUNT (INR)</th>
-          </tr>
-        </thead>
-        <tbody id="breakdownBody"></tbody>
-      </table>
-
-      <div class="section-heading">TRANSACTION LEDGER</div>
-      <table class="soa-table">
-        <thead>
-          <tr>
-            <th style="width:22%">TRANSACTION DATE</th>
-            <th style="width:38%">DESCRIPTION</th>
-            <th class="right" style="width:20%">AMOUNT (INR)</th>
-            <th class="right" style="width:20%">BALANCE (INR)</th>
-          </tr>
-        </thead>
-        <tbody id="ledgerBody"></tbody>
-      </table>
-
-      <div class="soa-footer">
-        <div class="footer-note">
-          <b>Note:</b> This is a computer-generated Statement of Account. For any discrepancy,
-          please contact Narainsons Investments Finance and Consultancy Private Limited.
-        </div>
-        <div class="footer-sign">
-          <div class="sign-company">NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</div>
-          <div class="sign-line"></div>
-          <div class="sign-label">Authorised Signatory</div>
-        </div>
-      </div>
-
     </div>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ============== SECTION 2: HISTORY ========================== -->
+  <!-- ============================================================ -->
+  <div id="historySection" class="hidden">
+
+    <div class="card">
+      <h2>📚 Saved SOA History</h2>
+
+      <!-- Search Bar -->
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="🔍 Search by Customer Name or PAN..." />
+        <button id="clearSearchBtn" class="btn-small">✕ Clear</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="history-stats">
+        <span>Total Saved: <b id="totalCount">0</b></span>
+        <span>Showing: <b id="showingCount">0</b></span>
+      </div>
+
+      <!-- History Table -->
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th style="width:5%">#</th>
+              <th style="width:18%">Customer Name</th>
+              <th style="width:12%">PAN</th>
+              <th style="width:12%">Disbursal Date</th>
+              <th style="width:12%">Statement Date</th>
+              <th class="right" style="width:12%">Final Payable</th>
+              <th style="width:12%">Saved On</th>
+              <th style="width:17%">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr>
+              <td colspan="8" class="empty-msg">No saved SOA yet. Generate one to see it here.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Re-view Preview (same SOA template) -->
+    <div id="historyPreview" class="hidden">
+      <div class="soa-actions">
+        <button id="downloadHistoryPdfBtn" class="btn-success">⬇️ Download PDF</button>
+        <button id="closeHistoryPreviewBtn" class="btn-secondary">✕ Close Preview</button>
+      </div>
+
+      <div id="historyContent" class="soa-content">
+        <!-- Same structure, will be filled by JS -->
+        <div class="soa-letterhead">
+          <div class="lh-logo">NI</div>
+          <div class="lh-text">
+            <h1>NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</h1>
+            <p class="lh-tag">Statement of Account</p>
+          </div>
+        </div>
+
+        <div class="soa-title-bar">STATEMENT OF ACCOUNT</div>
+
+        <div class="details-grid">
+          <div class="details-box">
+            <div class="details-title">BORROWER DETAILS</div>
+            <div class="details-row">
+              <span class="lbl">Customer Name:</span>
+              <span class="val" id="hName">—</span>
+            </div>
+            <div class="details-row">
+              <span class="lbl">PAN:</span>
+              <span class="val" id="hPan">—</span>
+            </div>
+          </div>
+          <div class="details-box">
+            <div class="details-title">LOAN ACCOUNT DETAILS</div>
+            <div class="details-row">
+              <span class="lbl">Account Status:</span>
+              <span class="val status-red" id="hStatus">—</span>
+            </div>
+            <div class="details-row">
+              <span class="lbl">Date of Disbursal:</span>
+              <span class="val" id="hDisbDate">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-heading">ACCOUNT BREAKDOWN</div>
+        <table class="soa-table">
+          <thead>
+            <tr>
+              <th style="width:38%">COMPONENT</th>
+              <th style="width:42%">CALCULATION DETAIL</th>
+              <th class="right" style="width:20%">AMOUNT (INR)</th>
+            </tr>
+          </thead>
+          <tbody id="hBreakdownBody"></tbody>
+        </table>
+
+        <div class="section-heading">TRANSACTION LEDGER</div>
+        <table class="soa-table">
+          <thead>
+            <tr>
+              <th style="width:22%">TRANSACTION DATE</th>
+              <th style="width:38%">DESCRIPTION</th>
+              <th class="right" style="width:20%">AMOUNT (INR)</th>
+              <th class="right" style="width:20%">BALANCE (INR)</th>
+            </tr>
+          </thead>
+          <tbody id="hLedgerBody"></tbody>
+        </table>
+
+        <div class="soa-footer">
+          <div class="footer-note">
+            <b>Note:</b> This is a computer-generated Statement of Account. For any discrepancy,
+            please contact Narainsons Investments Finance and Consultancy Private Limited.
+          </div>
+          <div class="footer-sign">
+            <div class="sign-company">NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</div>
+            <div class="sign-line"></div>
+            <div class="sign-label">Authorised Signatory</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 </div>
