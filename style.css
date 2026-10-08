@@ -1,539 +1,134 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-  background: #f0f4f8;
-  color: #1a202c;
-  padding: 20px;
-}
-
-.container { max-width: 1200px; margin: 0 auto; }
-
-/* ==================== CRM HEADER ==================== */
-.crm-header {
+/* ==================== MAIN TABS ==================== */
+.tab-switcher {
   display: flex;
-  align-items: center;
-  gap: 18px;
-  background: linear-gradient(135deg, #0b2545, #13315c);
-  color: #fff;
-  padding: 18px 24px;
-  border-radius: 12px;
-  margin-bottom: 22px;
-  box-shadow: 0 6px 18px rgba(11,37,69,0.25);
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-.crm-logo {
-  width: 56px; height: 56px;
-  background: #f6c85f; color: #0b2545;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 22px;
-  flex-shrink: 0;
-}
-
-.crm-title { flex: 1; }
-.crm-title h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.4px; }
-.crm-title p  { font-size: 13px; color: #c9d6e5; margin-top: 4px; }
-
-.nav-link {
-  padding: 10px 18px;
-  background: #f6c85f;
-  color: #0b2545;
-  text-decoration: none;
-  font-size: 13px;
+.tab-btn {
+  padding: 12px 24px;
+  border: 2px solid #cbd5e0;
+  background: #fff;
+  color: #4a5568;
+  font-size: 14px;
   font-weight: 700;
   border-radius: 8px;
+  cursor: pointer;
   transition: all 0.2s;
-  white-space: nowrap;
 }
 
-.nav-link:hover {
-  background: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+.tab-btn:hover { border-color: #13315c; color: #13315c; }
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #0b2545, #13315c);
+  color: #fff;
+  border-color: #0b2545;
+  box-shadow: 0 4px 12px rgba(11,37,69,0.3);
 }
 
-/* ==================== CARD ==================== */
-.card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 26px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-  margin-bottom: 26px;
-  border: 1px solid #e2e8f0;
+/* ==================== SEARCH BAR ==================== */
+.search-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
-.card h2 {
-  font-size: 17px;
-  color: #0b2545;
-  margin-bottom: 18px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #f6c85f;
-  display: inline-block;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.form-group { display: flex; flex-direction: column; }
-
-.form-group label {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #4a5568;
-  margin-bottom: 6px;
-}
-
-.form-group input {
-  padding: 10px 12px;
-  border: 1.5px solid #cbd5e0;
-  border-radius: 7px;
+.search-bar input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #cbd5e0;
+  border-radius: 8px;
   font-size: 14px;
   background: #f9fbfd;
   transition: all 0.2s;
 }
 
-.form-group input:focus {
+.search-bar input:focus {
   outline: none;
   border-color: #13315c;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(19,49,92,0.12);
 }
 
-input[readonly] {
-  background: #eef2f7 !important;
-  color: #13315c;
-  font-weight: 700;
-  cursor: not-allowed;
-  border-color: #cbd5e0;
-}
-
-.highlight-input input {
-  border-color: #f6c85f !important;
-  background: #fffbea !important;
-  font-weight: 800;
-  font-size: 15px;
-  color: #065f46;
-}
-.highlight-input label { color: #b7791f; font-weight: 700; }
-
-.highlight-input-green input {
-  border-color: #1e7d4a !important;
-  background: #f0fdf4 !important;
-  font-weight: 800;
-  font-size: 15px;
-  color: #065f46;
-}
-.highlight-input-green label { color: #1e7d4a; font-weight: 700; }
-
-.btn-primary, .btn-success, .btn-secondary {
-  margin-top: 22px;
-  padding: 12px 26px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #0b2545, #13315c);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(11,37,69,0.3);
-}
-.btn-primary:hover { transform: translateY(-2px); }
-
-.btn-success {
-  background: linear-gradient(135deg, #1e7d4a, #2ba15f);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(30,125,74,0.3);
-}
-.btn-success:hover { transform: translateY(-2px); }
-
-.btn-secondary {
-  background: #e8eef5;
-  color: #13315c;
-  border: 1.5px solid #c9d6e5;
-}
-.btn-secondary:hover { background: #d6e2f0; }
-
-.btn-small {
-  padding: 6px 14px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  background: #13315c;
-  color: #fff;
-  transition: all 0.2s;
-}
-.btn-small:hover { background: #0b2545; }
-
-.hidden { display: none !important; }
-
-.soa-actions {
-  display: flex; gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-/* ==================== PAYMENT SECTION ==================== */
-.payment-section {
-  margin-top: 26px;
-  padding-top: 20px;
-  border-top: 2px dashed #cbd5e0;
-}
-
-.payment-header {
+/* ==================== HISTORY STATS ==================== */
+.history-stats {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
+  gap: 24px;
+  padding: 10px 4px 16px;
+  font-size: 13px;
+  color: #4a5568;
 }
 
-.payment-header h3 {
+.history-stats b {
+  color: #13315c;
   font-size: 15px;
-  color: #0b2545;
-  font-weight: 700;
 }
 
-.payment-table {
+/* ==================== HISTORY TABLE ==================== */
+.history-table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1.5px solid #cfdce9;
+}
+
+.history-table {
   width: 100%;
   border-collapse: collapse;
-  border: 1.5px solid #cfdce9;
-  border-radius: 8px;
-  overflow: hidden;
+  font-size: 12.5px;
 }
 
-.payment-table thead th {
+.history-table thead th {
   background: #13315c;
   color: #fff;
-  padding: 10px 12px;
+  padding: 11px 10px;
   text-align: left;
-  font-size: 11.5px;
   font-weight: 700;
+  font-size: 11px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 
-.payment-table tbody td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.payment-table tbody input {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1.5px solid #cbd5e0;
-  border-radius: 6px;
-  font-size: 13px;
-  background: #f9fbfd;
-}
-
-.payment-table tbody input:focus {
-  outline: none;
-  border-color: #13315c;
-  background: #fff;
-}
-
-.payment-table .right { text-align: right; }
-
-.btn-remove {
-  background: #fed7d7;
-  color: #c53030;
-  border: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  font-weight: 800;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.btn-remove:hover { background: #fc8181; color: #fff; }
-
-/* ==================== SOA CONTENT ==================== */
-.soa-content {
-  background: #fff;
-  padding: 0 0 30px 0;
-  border-radius: 10px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.1);
-  overflow: hidden;
-  border: 1px solid #d0dae5;
-}
-
-.soa-letterhead {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  background: linear-gradient(135deg, #0b2545, #13315c, #1d4e89);
-  color: #fff;
-  padding: 22px 28px;
-}
-
-.lh-logo {
-  width: 60px; height: 60px;
-  background: #f6c85f;
-  color: #0b2545;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 24px;
-  flex-shrink: 0;
-}
-
-.lh-text h1 {
-  font-size: 16px; font-weight: 700;
-  letter-spacing: 0.6px; line-height: 1.35;
-  text-transform: uppercase;
-}
-
-.lh-tag {
-  font-size: 12px; color: #f6c85f;
-  letter-spacing: 3px; text-transform: uppercase;
-  margin-top: 4px; font-weight: 600;
-}
-
-.soa-title-bar {
-  background: #f6c85f;
-  color: #0b2545;
-  text-align: center;
-  font-weight: 800;
-  font-size: 15px;
-  letter-spacing: 4px;
-  padding: 11px;
-  text-transform: uppercase;
-  border-bottom: 2px solid #0b2545;
-}
-
-.closure-bar {
-  background: linear-gradient(90deg, #1e7d4a, #2ba15f, #1e7d4a);
-  color: #fff;
-  letter-spacing: 3px;
-}
-
-/* ==================== LOAN CLOSED STAMP ==================== */
-.closed-stamp-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 22px 26px 0;
-}
-
-.closed-stamp {
-  border: 4px double #1e7d4a;
-  border-radius: 14px;
-  padding: 14px 34px;
-  transform: rotate(-3deg);
-  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
-  box-shadow: 0 4px 14px rgba(30,125,74,0.2);
-}
-
-.stamp-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.stamp-icon { font-size: 26px; color: #1e7d4a; font-weight: 900; }
-.stamp-text { font-size: 22px; font-weight: 900; color: #065f46; letter-spacing: 4px; }
-.stamp-date { font-size: 11px; color: #1e7d4a; font-weight: 700; letter-spacing: 1px; }
-
-/* ==================== DETAILS ==================== */
-.details-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-  padding: 22px 26px 6px;
-}
-
-.details-box {
-  border: 1.5px solid #cfdce9;
-  border-radius: 9px;
-  overflow: hidden;
-  background: #fafcff;
-}
-
-.details-title {
-  background: #13315c;
-  color: #fff;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 1.4px;
-  padding: 9px 14px;
-  text-transform: uppercase;
-}
-
-.details-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 14px;
-  font-size: 13px;
-  border-bottom: 1px dashed #d8e2ec;
-}
-
-.details-row:last-child { border-bottom: none; }
-.details-row .lbl { color: #64748b; font-weight: 600; }
-.details-row .val { color: #0b2545; font-weight: 700; }
-.status-red { color: #c53030 !important; }
-.status-green { color: #1e7d4a !important; }
-
-/* ==================== SECTIONS ==================== */
-.section-heading {
-  margin: 24px 26px 12px;
-  padding: 10px 14px;
-  background: linear-gradient(90deg, #e8f0fa 0%, #f6faff 100%);
-  border-left: 5px solid #13315c;
-  color: #0b2545;
-  font-size: 13.5px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  border-radius: 0 6px 6px 0;
-}
-
-/* ==================== TABLES ==================== */
-.soa-table {
-  width: calc(100% - 52px);
-  margin: 0 26px 6px;
-  border-collapse: collapse;
-  font-size: 12.5px;
-  border: 1px solid #cfdce9;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.soa-table thead th {
-  background: #13315c;
-  color: #fff;
-  padding: 11px 12px;
-  text-align: left;
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-}
-
-.soa-table tbody td {
-  padding: 10px 12px;
+.history-table tbody td {
+  padding: 10px;
   border-bottom: 1px solid #e2e8f0;
   color: #2d3748;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
-.soa-table tbody tr:nth-child(even) { background: #f6f9fc; }
-.soa-table tbody tr:last-child td { border-bottom: none; }
-.soa-table .right { text-align: right; font-variant-numeric: tabular-nums; }
+.history-table tbody tr:nth-child(even) { background: #f6f9fc; }
+.history-table tbody tr:hover { background: #ebf4ff; }
+.history-table .right { text-align: right; font-variant-numeric: tabular-nums; }
 
-.soa-table .total-row td {
-  font-weight: 800;
-  background: #dbeafe !important;
-  color: #0b2545;
-  border-top: 1.5px solid #13315c;
-}
-
-.soa-table .discount-row td {
-  font-weight: 800;
-  background: #fffbea !important;
-  color: #b7791f;
-  border-top: 1.5px solid #f6c85f;
-  border-bottom: 1.5px solid #f6c85f;
-}
-
-.soa-table .final-row td {
-  font-weight: 800;
-  background: linear-gradient(90deg, #d1fae5 0%, #ecfdf5 100%) !important;
-  color: #065f46;
-  font-size: 13.5px;
-  border-top: 2px solid #1e7d4a;
-}
-
-.soa-table .final-row-green td {
-  font-weight: 800;
-  background: linear-gradient(90deg, #1e7d4a 0%, #2ba15f 100%) !important;
-  color: #fff !important;
-  font-size: 14px;
-  border-top: 2px solid #065f46;
-}
-
-/* ==================== CLOSURE NOTE ==================== */
-.closure-note {
-  margin: 24px 26px 0;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
-  border: 2px solid #1e7d4a;
-  border-radius: 10px;
-  font-size: 13px;
-  color: #065f46;
-  line-height: 1.6;
-}
-
-/* ==================== FOOTER ==================== */
-.soa-footer {
-  margin: 28px 26px 0;
-  padding-top: 16px;
-  border-top: 2px solid #13315c;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 20px;
-}
-
-.footer-note {
-  font-size: 10.5px;
-  color: #64748b;
-  line-height: 1.5;
-  max-width: 60%;
+.history-table .empty-msg {
+  text-align: center;
+  color: #94a3b8;
+  padding: 28px !important;
   font-style: italic;
 }
 
-.footer-sign {
-  text-align: center;
-  min-width: 220px;
-}
-
-.sign-company {
-  font-size: 9px;
-  font-weight: 700;
-  color: #13315c;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-  line-height: 1.3;
-  text-align: center;
-}
-
-.sign-line {
-  width: 180px;
-  border-bottom: 1.5px solid #0b2545;
-  margin: 0 auto 6px;
-}
-
-.sign-label {
+.btn-view, .btn-pdf, .btn-del {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
   font-size: 11px;
   font-weight: 700;
-  color: #0b2545;
-  letter-spacing: 0.5px;
+  cursor: pointer;
+  margin-right: 4px;
+  transition: all 0.2s;
 }
 
-/* ==================== RESPONSIVE ==================== */
-@media (max-width: 720px) {
-  .details-grid { grid-template-columns: 1fr; }
-  .soa-table { font-size: 11px; }
-  .lh-text h1 { font-size: 13px; }
-  .crm-title h1 { font-size: 14px; }
-  .payment-table { font-size: 11px; }
-  .crm-header { flex-direction: column; align-items: flex-start; }
-}
+.btn-view { background: #dbeafe; color: #1e40af; }
+.btn-view:hover { background: #bfdbfe; }
 
-/* ==================== PRINT ==================== */
-@media print {
-  body { background: #fff; padding: 0; }
-  .crm-header, .card, .soa-actions { display: none !important; }
-  .soa-content { box-shadow: none; border: none; }
+.btn-pdf { background: #d1fae5; color: #065f46; }
+.btn-pdf:hover { background: #a7f3d0; }
+
+.btn-del { background: #fee2e2; color: #991b1b; }
+.btn-del:hover { background: #fecaca; }
+
+@media (max-width: 900px) {
+  .history-table { font-size: 11px; }
+  .history-table thead th,
+  .history-table tbody td { padding: 8px 6px; }
+  .btn-view, .btn-pdf, .btn-del { font-size: 10px; padding: 4px 7px; }
 }
