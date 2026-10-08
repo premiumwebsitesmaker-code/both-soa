@@ -1,5 +1,5 @@
 /* ============================================================
-   NIFCPL SOA CRM — Active + Closure Logic
+   NIFCPL SOA CRM — Active + Closure + History (localStorage)
    ============================================================ */
 
 const $ = (id) => document.getElementById(id);
@@ -40,12 +40,47 @@ function addDays(dateStr, days) {
 }
 
 // ============================================================
-//  ACTIVE SOA LOGIC (only runs on index.html)
+//  LOCALSTORAGE HELPERS
+// ============================================================
+const STORAGE_KEY = 'nifcpl_soa_active';
+
+function getSavedSOAs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.error('Storage error:', e);
+    return [];
+  }
+}
+
+function saveSOAs(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+function addSOA(record) {
+  const list = getSavedSOAs();
+  list.unshift(record); // newest first
+  saveSOAs(list);
+}
+
+function deleteSOA(id) {
+  const list = getSavedSOAs().filter(r => r.id !== id);
+  saveSOAs(list);
+}
+
+function generateId() {
+  return 'SOA_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+// ============================================================
+//  ACTIVE SOA LOGIC
 // ============================================================
 if ($('generateBtn')) {
 
   window.addEventListener('DOMContentLoaded', () => {
     $('statementDate').valueAsDate = new Date();
+    renderHistory();
   });
 
   function calculateSOA() {
@@ -85,19 +120,9 @@ if ($('generateBtn')) {
     };
   }
 
-  function renderSOA() {
-    const data = calculateSOA();
-
-    $('outName').textContent     = ($('customerName').value || '').trim() || '—';
-    $('outPan').textContent      = ($('panNumber').value || '').trim().toUpperCase() || '—';
-    $('outStatus').textContent   = ($('accountStatus').value || '').trim() || '—';
-    $('outDisbDate').textContent = fmtDate(data.disbDate);
-
-    const disbFmt = fmtDate(data.disbDate);
-    const stmtFmt = fmtDate(data.stmtDate);
-
-    // Breakdown
-    const rows = [
+  // ---------- Build breakdown + ledger rows (reusable) ----------
+  function buildBreakdownRows(data) {
+    return [
       ['Principal', 'Disbursed Amount', data.principal, ''],
       [`First 7 Days Interest @ ${data.rateFirst}% p.m. SI`,
         `${data.principal.toFixed(2)} × ${data.rateFirst}% × 7/30`,
@@ -124,7 +149,24 @@ if ($('generateBtn')) {
         'Final Payable Balance',
         data.netPayable, 'final-row']
     ];
+  }
 
+  function buildLedgerRows(data) {
+    const disbFmt = fmtDate(data.disbDate);
+    const stmtFmt = fmtDate(data.stmtDate);
+
+    return [
+      [disbFmt, 'Loan Disbursal Principal', data.principal, data.principal],
+      [addDays(data.disbDate, 7), 'Contractual Interest (First 7 Days)', data.first7Interest, data.principal + data.first7Interest],
+      [`${addDays(data.disbDate, 7)} – ${stmtFmt}`, `Overdue Interest @ ${data.rateFirst}% p.m.`, data.postDueInterest, data.principal + data.first7Interest + data.postDueInterest],
+      [`${addDays(data.disbDate, 7)} – ${stmtFmt}`, `Default Interest @ ${data.defaultRate}% p.m.`, data.defaultInterest, data.principal + data.total4Interest + data.defaultInterest],
+      [stmtFmt, `Penal Charges (${data.completedYears} Completed Years)`, data.penalCharges, data.totalOutstanding],
+      [stmtFmt, 'Concessionary Waiver Adjustment', -data.waiver, data.netPayable]
+    ];
+  }
+
+  // ---------- Render breakdown into DOM ----------
+  function renderBreakdown(rows, tbodyId) {
     let html = '';
     rows.forEach(r => {
       html += `<tr class="${r[3]}">
@@ -133,39 +175,88 @@ if ($('generateBtn')) {
         <td class="right">${inr(r[2])}</td>
       </tr>`;
     });
-    $('breakdownBody').innerHTML = html;
+    $(tbodyId).innerHTML = html;
+  }
 
-    // Ledger
-    const led = [
-      [disbFmt, 'Loan Disbursal Principal', data.principal, data.principal],
-      [addDays(data.disbDate, 7), 'Contractual Interest (First 7 Days)', data.first7Interest, data.principal + data.first7Interest],
-      [`${addDays(data.disbDate, 7)} – ${stmtFmt}`, `Overdue Interest @ ${data.rateFirst}% p.m.`, data.postDueInterest, data.principal + data.first7Interest + data.postDueInterest],
-      [`${addDays(data.disbDate, 7)} – ${stmtFmt}`, `Default Interest @ ${data.defaultRate}% p.m.`, data.defaultInterest, data.principal + data.total4Interest + data.defaultInterest],
-      [stmtFmt, `Penal Charges (${data.completedYears} Completed Years)`, data.penalCharges, data.totalOutstanding],
-      [stmtFmt, 'Concessionary Waiver Adjustment', -data.waiver, data.netPayable]
-    ];
-
-    let lhtml = '';
-    led.forEach(r => {
-      lhtml += `<tr>
+  function renderLedger(rows, tbodyId, netPayable, status) {
+    let html = '';
+    rows.forEach(r => {
+      html += `<tr>
         <td>${r[0]}</td>
         <td>${r[1]}</td>
         <td class="right">${inr(r[2])}</td>
         <td class="right">${inr(r[3])}</td>
       </tr>`;
     });
-
-    const status = ($('accountStatus').value || '').trim() || 'DEFAULT';
-    lhtml += `<tr class="final-row">
+    html += `<tr class="final-row">
       <td colspan="3">Net Outstanding Balance</td>
-      <td class="right">${inr(data.netPayable)} (${status})</td>
+      <td class="right">${inr(netPayable)} (${status})</td>
     </tr>`;
-    $('ledgerBody').innerHTML = lhtml;
-
-    $('soaPreview').classList.remove('hidden');
-    $('soaPreview').scrollIntoView({ behavior: 'smooth' });
+    $(tbodyId).innerHTML = html;
   }
 
+  // ---------- Generate Active SOA ----------
+  function renderSOA() {
+    // Basic validation
+    if (!$('disbursalDate').value) { alert('Please select Date of Disbursal'); return; }
+    if (!$('statementDate').value) { alert('Please select Statement Date'); return; }
+    if (!parseFloat($('principal').value)) { alert('Please enter Principal Amount'); return; }
+    if (!parseFloat($('finalOverdue').value)) { alert('Please enter Final Overdue Amount'); return; }
+
+    const data = calculateSOA();
+
+    // Fill header
+    $('outName').textContent     = ($('customerName').value || '').trim() || '—';
+    $('outPan').textContent      = ($('panNumber').value || '').trim().toUpperCase() || '—';
+    $('outStatus').textContent   = ($('accountStatus').value || '').trim() || '—';
+    $('outDisbDate').textContent = fmtDate(data.disbDate);
+
+    // Fill tables
+    renderBreakdown(buildBreakdownRows(data), 'breakdownBody');
+    const status = ($('accountStatus').value || '').trim() || 'DEFAULT';
+    renderLedger(buildLedgerRows(data), 'ledgerBody', data.netPayable, status);
+
+    // ---------- SAVE TO LOCALSTORAGE ----------
+    const record = {
+      id: generateId(),
+      savedOn: new Date().toISOString(),
+      customerName: ($('customerName').value || '').trim() || '—',
+      panNumber: ($('panNumber').value || '').trim().toUpperCase() || '—',
+      accountStatus: status,
+      principal: data.principal,
+      disbDate: data.disbDate,
+      stmtDate: data.stmtDate,
+      rateFirst: data.rateFirst,
+      defaultRate: data.defaultRate,
+      penalBase: data.penalBase,
+      finalOverdue: data.finalOverdue,
+      // Save all computed values so re-view is instant
+      computed: {
+        first7Interest: data.first7Interest,
+        postDueInterest: data.postDueInterest,
+        total4Interest: data.total4Interest,
+        defaultInterest: data.defaultInterest,
+        penalCharges: data.penalCharges,
+        completedYears: data.completedYears,
+        postDueDays: data.postDueDays,
+        totalOutstanding: data.totalOutstanding,
+        waiver: data.waiver,
+        netPayable: data.netPayable
+      }
+    };
+    addSOA(record);
+
+    // Show preview
+    $('soaPreview').classList.remove('hidden');
+    $('soaPreview').scrollIntoView({ behavior: 'smooth' });
+
+    // Refresh history table (so it's up to date)
+    renderHistory();
+  }
+
+  $('generateBtn').addEventListener('click', renderSOA);
+
+  // ---------- Download Active PDF ----------
   async function downloadActivePDF() {
     const { jsPDF } = window.jspdf;
     const element = $('soaContent');
@@ -203,121 +294,156 @@ if ($('generateBtn')) {
     pdf.save(`Active_SOA_${name}_${pan}_${date}.pdf`);
   }
 
-  $('generateBtn').addEventListener('click', renderSOA);
   $('downloadPdfBtn').addEventListener('click', downloadActivePDF);
   $('editBtn').addEventListener('click', () => {
     $('soaPreview').classList.add('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
   $('printBtn').addEventListener('click', () => window.print());
-}
 
-// ============================================================
-//  CLOSURE SOA LOGIC (only runs on closure.html)
-// ============================================================
-if ($('generateClosureBtn')) {
-
-  window.addEventListener('DOMContentLoaded', () => {
-    // Add 1 default payment row
-    addPaymentRow();
+  // ============================================================
+  //  TABS SWITCHING
+  // ============================================================
+  $('tabGenerate').addEventListener('click', () => {
+    $('tabGenerate').classList.add('active');
+    $('tabHistory').classList.remove('active');
+    $('generateSection').classList.remove('hidden');
+    $('historySection').classList.add('hidden');
   });
 
-  // ---------- Payment Rows ----------
-  function addPaymentRow(date = '', mode = '', ref = '', amt = '') {
-    const tbody = $('paymentBody');
-    const tr = document.createElement('tr');
+  $('tabHistory').addEventListener('click', () => {
+    $('tabHistory').classList.add('active');
+    $('tabGenerate').classList.remove('active');
+    $('historySection').classList.remove('hidden');
+    $('generateSection').classList.add('hidden');
+    renderHistory();
+  });
 
-    tr.innerHTML = `
-      <td><input type="date" class="pay-date" value="${date}" /></td>
-      <td>
-        <select class="pay-mode" style="width:100%; padding:8px 10px; border:1.5px solid #cbd5e0; border-radius:6px; font-size:13px; background:#f9fbfd;">
-          <option value="">Select Mode</option>
-          <option value="Cash" ${mode === 'Cash' ? 'selected' : ''}>Cash</option>
-          <option value="UPI" ${mode === 'UPI' ? 'selected' : ''}>UPI</option>
-          <option value="NEFT" ${mode === 'NEFT' ? 'selected' : ''}>NEFT</option>
-          <option value="RTGS" ${mode === 'RTGS' ? 'selected' : ''}>RTGS</option>
-          <option value="Cheque" ${mode === 'Cheque' ? 'selected' : ''}>Cheque</option>
-          <option value="DD" ${mode === 'DD' ? 'selected' : ''}>DD</option>
-          <option value="Bank Transfer" ${mode === 'Bank Transfer' ? 'selected' : ''}>Bank Transfer</option>
-        </select>
-      </td>
-      <td><input type="text" class="pay-ref" placeholder="e.g. TXN12345" value="${ref}" /></td>
-      <td class="right"><input type="number" class="pay-amount" step="0.01" placeholder="0.00" value="${amt}" style="text-align:right;" /></td>
-      <td><button class="btn-remove" onclick="this.closest('tr').remove()">✕</button></td>
-    `;
-    tbody.appendChild(tr);
-  }
+  // ============================================================
+  //  HISTORY RENDERING
+  // ============================================================
+  function renderHistory() {
+    const list = getSavedSOAs();
+    const query = ($('searchInput').value || '').trim().toLowerCase();
 
-  $('addPaymentBtn').addEventListener('click', () => addPaymentRow());
+    const filtered = query
+      ? list.filter(r =>
+          (r.customerName || '').toLowerCase().includes(query) ||
+          (r.panNumber || '').toLowerCase().includes(query)
+        )
+      : list;
 
-  // ---------- Generate Closure SOA ----------
-  function renderClosure() {
-    const cName        = ($('cCustomerName').value || '').trim() || '—';
-    const cPan         = ($('cPanNumber').value || '').trim().toUpperCase() || '—';
-    const cPrincipal   = parseFloat($('cPrincipal').value) || 0;
-    const cDisbDate    = $('cDisbursalDate').value;
-    const cClosureDate = $('cClosureDate').value;
-    const cOverdue     = parseFloat($('cTotalOverdue').value) || 0;
-    const cDiscount    = parseFloat($('cDiscount').value) || 0;
-    const cSettled     = parseFloat($('cSettledAmount').value) || 0;
+    $('totalCount').textContent = list.length;
+    $('showingCount').textContent = filtered.length;
 
-    // Fill SOA header
-    $('outCName').textContent     = cName;
-    $('outCPan').textContent      = cPan;
-    $('outCDisbDate').textContent = fmtDate(cDisbDate);
-    $('outCCloseDate2').textContent = fmtDate(cClosureDate);
-    $('outCCloseDate3').textContent = fmtDate(cClosureDate);
-    $('outCName2').textContent    = cName;
-    $('outClosureDate').textContent = `Closed on ${fmtDate(cClosureDate)}`;
+    const tbody = $('historyBody');
 
-    // ---------- Payment History ----------
-    const payRows = $('paymentBody').querySelectorAll('tr');
-    let payHtml = '';
-    let totalPaid = 0;
-    let srNo = 1;
-
-    payRows.forEach(tr => {
-      const date = tr.querySelector('.pay-date').value;
-      const mode = tr.querySelector('.pay-mode').value;
-      const ref  = tr.querySelector('.pay-ref').value.trim();
-      const amt  = parseFloat(tr.querySelector('.pay-amount').value) || 0;
-
-      if (date || mode || ref || amt > 0) {
-        totalPaid += amt;
-        payHtml += `<tr>
-          <td>${srNo++}</td>
-          <td>${fmtDate(date)}</td>
-          <td>${mode || '—'}</td>
-          <td>${ref || '—'}</td>
-          <td class="right">${inr(amt)}</td>
-        </tr>`;
-      }
-    });
-
-    if (!payHtml) {
-      payHtml = `<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:20px;">No payment records added</td></tr>`;
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-msg">${
+        query ? 'No matching records found.' : 'No saved SOA yet. Generate one to see it here.'
+      }</td></tr>`;
+      return;
     }
 
-    $('outPaymentBody').innerHTML = payHtml;
+    let html = '';
+    filtered.forEach((r, i) => {
+      const savedDate = new Date(r.savedOn).toLocaleString('en-IN', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
 
-    // ---------- Summary ----------
-    $('outTotalOverdue').textContent  = inr(cOverdue);
-    $('outTotalDiscount').textContent = '- ' + inr(cDiscount);
-    $('outNetSettled').textContent    = inr(cSettled);
-    $('outTotalPaid').textContent     = inr(totalPaid);
+      html += `<tr>
+        <td>${i + 1}</td>
+        <td><b>${r.customerName}</b></td>
+        <td>${r.panNumber}</td>
+        <td>${fmtDate(r.disbDate)}</td>
+        <td>${fmtDate(r.stmtDate)}</td>
+        <td class="right"><b>${inr(r.computed.netPayable)}</b></td>
+        <td style="font-size:11px; color:#64748b;">${savedDate}</td>
+        <td>
+          <button class="btn-view" data-id="${r.id}">👁 View</button>
+          <button class="btn-pdf" data-id="${r.id}">⬇ PDF</button>
+          <button class="btn-del" data-id="${r.id}">🗑 Del</button>
+        </td>
+      </tr>`;
+    });
+    tbody.innerHTML = html;
 
-    // Show preview
-    $('closurePreview').classList.remove('hidden');
-    $('closurePreview').scrollIntoView({ behavior: 'smooth' });
+    // Attach event listeners
+    tbody.querySelectorAll('.btn-view').forEach(b => {
+      b.addEventListener('click', () => viewSOA(b.dataset.id));
+    });
+    tbody.querySelectorAll('.btn-pdf').forEach(b => {
+      b.addEventListener('click', () => {
+        viewSOA(b.dataset.id, true);
+      });
+    });
+    tbody.querySelectorAll('.btn-del').forEach(b => {
+      b.addEventListener('click', () => {
+        if (confirm('Delete this SOA record? This cannot be undone.')) {
+          deleteSOA(b.dataset.id);
+          renderHistory();
+        }
+      });
+    });
   }
 
-  $('generateClosureBtn').addEventListener('click', renderClosure);
+  // Search live filter
+  $('searchInput').addEventListener('input', renderHistory);
 
-  // ---------- Download Closure PDF ----------
-  async function downloadClosurePDF() {
+  $('clearSearchBtn').addEventListener('click', () => {
+    $('searchInput').value = '';
+    renderHistory();
+  });
+
+  // ============================================================
+  //  VIEW SAVED SOA
+  // ============================================================
+  function viewSOA(id, autoDownload = false) {
+    const list = getSavedSOAs();
+    const r = list.find(x => x.id === id);
+    if (!r) { alert('Record not found'); return; }
+
+    // Fill preview
+    $('hName').textContent     = r.customerName;
+    $('hPan').textContent      = r.panNumber;
+    $('hStatus').textContent   = r.accountStatus;
+    $('hDisbDate').textContent = fmtDate(r.disbDate);
+
+    // Reconstruct data object for rendering
+    const data = {
+      principal: r.principal,
+      disbDate: r.disbDate,
+      stmtDate: r.stmtDate,
+      rateFirst: r.rateFirst,
+      defaultRate: r.defaultRate,
+      penalBase: r.penalBase,
+      finalOverdue: r.finalOverdue,
+      ...r.computed
+    };
+
+    renderBreakdown(buildBreakdownRows(data), 'hBreakdownBody');
+    renderLedger(buildLedgerRows(data), 'hLedgerBody', data.netPayable, r.accountStatus);
+
+    // Show
+    $('historyPreview').classList.remove('hidden');
+    $('historyPreview').scrollIntoView({ behavior: 'smooth' });
+
+    // Auto-download if PDF button clicked
+    if (autoDownload) {
+      setTimeout(() => downloadHistoryPDF(r), 300);
+    }
+  }
+
+  $('closeHistoryPreviewBtn').addEventListener('click', () => {
+    $('historyPreview').classList.add('hidden');
+  });
+
+  // ---------- Download from History Preview ----------
+  async function downloadHistoryPDF(r) {
     const { jsPDF } = window.jspdf;
-    const element = $('closureContent');
-    await new Promise(r => setTimeout(r, 250));
+    const element = $('historyContent');
+    await new Promise(res => setTimeout(res, 250));
 
     const canvas = await html2canvas(element, {
       scale: 2.5, useCORS: true,
@@ -345,16 +471,58 @@ if ($('generateClosureBtn')) {
       heightLeft -= (pageHeight - margin * 2);
     }
 
-    const name = ($('cCustomerName').value || 'Customer').trim().replace(/\s+/g, '_') || 'Customer';
-    const pan  = ($('cPanNumber').value || 'PAN').trim().toUpperCase() || 'PAN';
+    const name = (r.customerName || 'Customer').replace(/\s+/g, '_');
+    const pan  = (r.panNumber || 'PAN').toUpperCase();
     const date = new Date().toISOString().slice(0, 10);
-    pdf.save(`Closure_SOA_${name}_${pan}_${date}.pdf`);
+    pdf.save(`Active_SOA_${name}_${pan}_${date}.pdf`);
   }
 
-  $('downloadClosurePdfBtn').addEventListener('click', downloadClosurePDF);
-  $('editClosureBtn').addEventListener('click', () => {
-    $('closurePreview').classList.add('hidden');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  $('downloadHistoryPdfBtn').addEventListener('click', () => {
+    // Find currently viewed record
+    const visible = $('historyPreview').classList.contains('hidden');
+    if (visible) return;
+    // We don't track id directly — grab from hPan+hName match
+    // Simpler: download current preview
+    downloadCurrentPreviewPDF();
   });
-  $('printClosureBtn').addEventListener('click', () => window.print());
+
+  async function downloadCurrentPreviewPDF() {
+    const { jsPDF } = window.jspdf;
+    const element = $('historyContent');
+    await new Promise(res => setTimeout(res, 250));
+
+    const canvas = await html2canvas(element, {
+      scale: 2.5, useCORS: true,
+      backgroundColor: '#ffffff', logging: false
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth  = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 8;
+    const imgWidth  = pageWidth - margin * 2;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = margin;
+
+    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+    heightLeft -= (pageHeight - margin * 2);
+
+    while (heightLeft > 0) {
+      position = margin - (imgHeight - heightLeft);
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+      heightLeft -= (pageHeight - margin * 2);
+    }
+
+    const name = ($('hName').textContent || 'Customer').replace(/\s+/g, '_');
+    const pan  = ($('hPan').textContent || 'PAN').toUpperCase();
+    const date = new Date().toISOString().slice(0, 10);
+    pdf.save(`Active_SOA_${name}_${pan}_${date}.pdf`);
+  }
+
+  // Expose for history preview "Download PDF" button
+  window.downloadCurrentPreviewPDF = downloadCurrentPreviewPDF;
 }
