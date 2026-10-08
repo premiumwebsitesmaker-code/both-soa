@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Loan Closure SOA — NIFCPL CRM</title>
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ==================== CRM HEADER ==================== -->
+  <div class="crm-header">
+    <div class="crm-logo">NI</div>
+    <div class="crm-title">
+      <h1>NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</h1>
+      <p>Loan Closure Statement — CRM Portal</p>
+    </div>
+    <!-- 🔗 Nav back to Active page -->
+    <a href="index.html" class="nav-link">← Back to Active SOA</a>
+  </div>
+
+  <!-- ==================== INPUT FORM ==================== -->
+  <div class="card" id="closureInputCard">
+    <h2>🔒 Loan Closure Details</h2>
+
+    <!-- Customer Info -->
+    <div class="grid">
+      <div class="form-group">
+        <label>Customer Name</label>
+        <input type="text" id="cCustomerName" placeholder="Enter Customer Name" />
+      </div>
+
+      <div class="form-group">
+        <label>PAN Number</label>
+        <input type="text" id="cPanNumber" placeholder="Enter PAN Number" />
+      </div>
+
+      <div class="form-group">
+        <label>Account Status</label>
+        <input type="text" id="cAccountStatus" value="CLOSED" readonly />
+      </div>
+
+      <div class="form-group">
+        <label>Principal Disbursed Amount (₹)</label>
+        <input type="number" id="cPrincipal" placeholder="e.g. 2000" step="0.01" />
+      </div>
+
+      <div class="form-group">
+        <label>Date of Disbursal</label>
+        <input type="date" id="cDisbursalDate" />
+      </div>
+
+      <div class="form-group">
+        <label>Loan Closure Date</label>
+        <input type="date" id="cClosureDate" />
+      </div>
+
+      <div class="form-group">
+        <label>Total Overdue Amount Before Closure (₹)</label>
+        <input type="number" id="cTotalOverdue" placeholder="e.g. 22307.34" step="0.01" />
+      </div>
+
+      <div class="form-group">
+        <label>Total Discount Given (₹)</label>
+        <input type="number" id="cDiscount" placeholder="e.g. 9947.34" step="0.01" />
+      </div>
+
+      <div class="form-group highlight-input-green">
+        <label>✅ Final Settled Amount (₹)</label>
+        <input type="number" id="cSettledAmount" placeholder="e.g. 12360" step="0.01" />
+      </div>
+    </div>
+
+    <!-- Payment History -->
+    <div class="payment-section">
+      <div class="payment-header">
+        <h3>💰 Payment History (Kis Date Ko Kitna Paid)</h3>
+        <button id="addPaymentBtn" class="btn-small">+ Add Payment</button>
+      </div>
+
+      <table class="payment-table">
+        <thead>
+          <tr>
+            <th style="width:22%">Payment Date</th>
+            <th style="width:28%">Payment Mode</th>
+            <th style="width:25%">Reference No.</th>
+            <th class="right" style="width:20%">Amount (₹)</th>
+            <th style="width:5%"></th>
+          </tr>
+        </thead>
+        <tbody id="paymentBody">
+          <!-- Rows added by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <button id="generateClosureBtn" class="btn-primary">⚙️ Generate Closure SOA</button>
+  </div>
+
+  <!-- ==================== CLOSURE SOA PREVIEW ==================== -->
+  <div id="closurePreview" class="hidden">
+
+    <div class="soa-actions">
+      <button id="downloadClosurePdfBtn" class="btn-success">⬇️ Download Closure PDF</button>
+      <button id="editClosureBtn" class="btn-secondary">✏️ Edit Details</button>
+      <button id="printClosureBtn" class="btn-secondary">🖨️ Print</button>
+    </div>
+
+    <div id="closureContent" class="soa-content">
+
+      <!-- Letterhead -->
+      <div class="soa-letterhead">
+        <div class="lh-logo">NI</div>
+        <div class="lh-text">
+          <h1>NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</h1>
+          <p class="lh-tag">Loan Closure Statement</p>
+        </div>
+      </div>
+
+      <div class="soa-title-bar closure-bar">LOAN CLOSURE STATEMENT OF ACCOUNT</div>
+
+      <!-- LOAN CLOSED STAMP -->
+      <div class="closed-stamp-wrap">
+        <div class="closed-stamp">
+          <div class="stamp-inner">
+            <span class="stamp-icon">✔</span>
+            <span class="stamp-text">LOAN CLOSED</span>
+            <span class="stamp-date" id="outClosureDate">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div class="details-grid">
+        <div class="details-box">
+          <div class="details-title">BORROWER DETAILS</div>
+          <div class="details-row">
+            <span class="lbl">Customer Name:</span>
+            <span class="val" id="outCName">—</span>
+          </div>
+          <div class="details-row">
+            <span class="lbl">PAN:</span>
+            <span class="val" id="outCPan">—</span>
+          </div>
+        </div>
+        <div class="details-box">
+          <div class="details-title">LOAN ACCOUNT DETAILS</div>
+          <div class="details-row">
+            <span class="lbl">Account Status:</span>
+            <span class="val status-green" id="outCStatus">CLOSED</span>
+          </div>
+          <div class="details-row">
+            <span class="lbl">Date of Disbursal:</span>
+            <span class="val" id="outCDisbDate">—</span>
+          </div>
+          <div class="details-row">
+            <span class="lbl">Loan Closure Date:</span>
+            <span class="val" id="outCCloseDate2">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment History -->
+      <div class="section-heading">PAYMENT HISTORY</div>
+      <table class="soa-table">
+        <thead>
+          <tr>
+            <th style="width:10%">S.NO.</th>
+            <th style="width:25%">PAYMENT DATE</th>
+            <th style="width:25%">PAYMENT MODE</th>
+            <th style="width:20%">REFERENCE NO.</th>
+            <th class="right" style="width:20%">AMOUNT (INR)</th>
+          </tr>
+        </thead>
+        <tbody id="outPaymentBody"></tbody>
+      </table>
+
+      <!-- Closure Summary -->
+      <div class="section-heading">CLOSURE SUMMARY</div>
+      <table class="soa-table">
+        <thead>
+          <tr>
+            <th style="width:60%">DESCRIPTION</th>
+            <th class="right" style="width:40%">AMOUNT (INR)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Total Overdue Amount Before Closure</td>
+            <td class="right" id="outTotalOverdue">—</td>
+          </tr>
+          <tr class="discount-row">
+            <td>Less: Special Settlement Discount</td>
+            <td class="right" id="outTotalDiscount">—</td>
+          </tr>
+          <tr class="total-row">
+            <td>Net Settled Amount</td>
+            <td class="right" id="outNetSettled">—</td>
+          </tr>
+          <tr class="final-row">
+            <td>Total Amount Received from Customer</td>
+            <td class="right" id="outTotalPaid">—</td>
+          </tr>
+          <tr class="final-row-green">
+            <td><b>Balance Outstanding After Closure</b></td>
+            <td class="right"><b>₹0.00 — Account Fully Settled</b></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Closure Note -->
+      <div class="closure-note">
+        <b>✅ Closure Confirmation:</b> This is to certify that the loan account of
+        <span id="outCName2">the customer</span> has been
+        <b>fully settled and closed</b> on <span id="outCCloseDate3">—</span>.
+        No further dues are outstanding on this account. We thank you for your cooperation.
+      </div>
+
+      <!-- Footer -->
+      <div class="soa-footer">
+        <div class="footer-note">
+          <b>Note:</b> This is a computer-generated Loan Closure Statement. For any discrepancy,
+          please contact Narainsons Investments Finance and Consultancy Private Limited.
+        </div>
+        <div class="footer-sign">
+          <div class="sign-company">NARAINSONS INVESTMENTS FINANCE AND CONSULTANCY PRIVATE LIMITED</div>
+          <div class="sign-line"></div>
+          <div class="sign-label">Authorised Signatory</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
